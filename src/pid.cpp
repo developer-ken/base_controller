@@ -30,8 +30,20 @@ double PIDController::Update(double setpoint, double currentval, long time)
 
     double derivative = (error - prev_error) / dt;
     double output = kp_new * error + ki_new * integral + kd_new * derivative;
+    if (output > 255)
+        output = 255;
+    else if (output < -255)
+        output = -255;
     prev_error = error;
     time_last = time;
     outlast = output;
     return output;
+}
+
+void PIDController::SetZeroState()
+{
+    prev_error = 0;
+    time_last = 0;
+    integral = 0;
+    outlast = 0;
 }

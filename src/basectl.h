@@ -26,7 +26,7 @@ union TransDataBuf
 {
     TransData data;
     u_int8_t bytes[10];
-} transbuffer;
+};
 
 enum PackType
 {
@@ -39,6 +39,8 @@ enum PackType
 class BaseController
 {
 public:
+    bool IsMotorLocked = true;
+
     /// @brief 初始化底盘控制器。底盘本身是开环的，PID依赖外部里程计输入。
     /// @param port     用于连接MCU的串口
     /// @param linearX  X速度环PID控制器
@@ -80,6 +82,7 @@ private:
     PIDController *linearX, *linearY, *angular;
     double angularTarget;
     double prev_err, integral;
+    TransDataBuf transbuffer;
 };
 
 #endif

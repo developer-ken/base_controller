@@ -16,6 +16,7 @@ BaseController::BaseController(Serial *port, PIDController *linearX, PIDControll
     this->angular = angular;
     linearTarget = {0, 0};
     angularTarget = 0;
+    MotorLock(true);
 }
 
 void BaseController::Close()
@@ -25,15 +26,17 @@ void BaseController::Close()
 
 void BaseController::Move(Vector2 linear, double angular)
 {
+    linearTarget = linear;
+    angularTarget = angular;
 }
 
 void BaseController::MoveRaw(Vector2 linear, double angular)
 {
     int16_t Lf, Lb, Rf, Rb;
-    Lf = linear.X + linear.Y + angular;
-    Lb = linear.X - linear.Y + angular;
-    Rf = linear.X - linear.Y - angular;
-    Rb = linear.X + linear.Y - angular;
+    Lf = linear.X - linear.Y - angular;
+    Lb = linear.X + linear.Y - angular;
+    Rf = linear.X + linear.Y + angular;
+    Rb = linear.X - linear.Y + angular;
 
     transbuffer.data.HEADER = 0xAF;
     transbuffer.data.type = MOTOR_CMD;
@@ -50,6 +53,7 @@ void BaseController::MotorLock(bool lock)
     transbuffer.data.type = MOTOR_LOCK_UNLOCK;
     transbuffer.data.data[0] = !lock;
     port->Write((char *)&transbuffer.bytes, 10);
+    IsMotorLocked = lock;
 }
 
 void BaseController::Beep(bool on)
@@ -89,5 +93,17 @@ void BaseController::__PID(Vector2 Currentlinear, double Currentangular)
         linearX->Update(linearTarget.X, Currentlinear.X, currentTime),
         linearY->Update(linearTarget.Y, Currentlinear.Y, currentTime)};
     double angularOutput = angular->Update(angularTarget, Currentangular, currentTime);
+
+    // 如果目标速度为0，小车需要停下，将PID控制器重置为零状态，同时所有电机刹车
+    // 这是为了加速小车停下，不等待PID控制器下降阶跃响应的拟合。
+    /*if (linearTarget.X == 0 && linearTarget.Y == 0 && angularTarget == 0)
+    {
+        linearX->SetZeroState();
+        linearY->SetZeroState();
+        angular->SetZeroState();
+        linearOutput.X = 0;
+        linearOutput.Y = 0;
+        angularOutput = 0;
+    }*/
     MoveRaw(linearOutput, angularOutput);
 }

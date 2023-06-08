@@ -22,10 +22,12 @@ public:
     /// @return 控制器输出值
     double Update(double setpoint, double currentval, long time);
 
+    void SetZeroState();
+
 private:
     double kp, ki, kd;
     double prev_error, integral, maxintegral, outlast;
-    long time_last;
+    long time_last = 0;
 };
 
 #endif
